@@ -1,0 +1,42 @@
+app:
+  upload:
+    dir: /app/uploads/avatars
+
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/chatapp?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: ${MYSQL_ROOT_PASSWORD:root}
+
+  jpa:
+    hibernate:
+      # 'update' creates/updates tables on startup. Safe for this app.
+      # For a larger production system, replace with Flyway/Liquibase + ddl-auto: none.
+      ddl-auto: update
+
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+# Disable Swagger UI and API docs in production — not needed and exposes internals
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.kaif.chatapp: INFO          # application logs at INFO, not DEBUG
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN         # no SQL output in production

@@ -1,0 +1,21 @@
+# docker-compose.override.yml
+# Automatically loaded by docker compose in LOCAL DEV only.
+# DO NOT copy this to the server — on the server only docker-compose.yml is used.
+#
+# This file re-exposes the backend and database ports so that:
+#   - The Vite dev server (npm run dev) can reach the backend on localhost:8081
+#   - You can connect to MySQL on localhost:3307 with a DB tool (DBeaver, etc.)
+#   - You can inspect Redis on localhost:6380
+
+services:
+  app:
+    ports:
+      - "127.0.0.1:8081:8080"
+
+  mysql:
+    ports:
+      - "127.0.0.1:3307:3306"
+
+  redis:
+    ports:
+      - "127.0.0.1:6380:6379"
