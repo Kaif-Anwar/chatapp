@@ -2,6 +2,7 @@ package com.kaif.chatapp.config;
 
 import com.kaif.chatapp.security.WebSocketAuthInterceptor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -22,6 +23,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
+    /** Same origins as HTTP CORS — driven by APP_CORS_ORIGINS env var in production. */
+    @Value("${app.cors.origins:http://localhost:5173,http://localhost:3000}")
+    private String corsOrigins;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic", "/queue");
@@ -32,8 +37,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Browser clients (React frontend with SockJS fallback)
+        // Allowed origins read from app.cors.origins — set APP_CORS_ORIGINS env var in production
+        String[] origins = corsOrigins.split(",");
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:5173", "http://localhost:3000")
+                .setAllowedOriginPatterns(origins)
                 .withSockJS();
 
         // Native / mobile clients (raw WebSocket, no SockJS wrapper)

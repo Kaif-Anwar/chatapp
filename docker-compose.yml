@@ -46,6 +46,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       JWT_SECRET: ${JWT_SECRET}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
     volumes:
       - antigravity_uploads:/app/uploads
     depends_on:
