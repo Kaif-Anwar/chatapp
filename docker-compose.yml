@@ -62,7 +62,10 @@ services:
     image: antigravity-chatapp-frontend:latest
     container_name: antigravity-chatapp-frontend
     ports:
-      - "80:80"        # Public HTTP port — the only port exposed to the internet
+      - "80:80"          # HTTP — redirects to HTTPS
+      - "443:443"        # HTTPS — main entry point
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro   # SSL certs from host certbot
     depends_on:
       - app
 
