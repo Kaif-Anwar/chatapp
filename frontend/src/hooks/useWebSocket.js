@@ -6,6 +6,15 @@ import { useChatStore } from '../stores/chatStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useUiStore } from '../stores/uiStore';
 
+function isValidWsMessage(msg) {
+  return (
+    msg != null &&
+    typeof msg === 'object' &&
+    msg.id != null &&
+    typeof msg.content === 'string'
+  );
+}
+
 export function useWebSocket(user) {
   const clientRef = useRef(null);
   const subscribedConvIds = useRef(new Set());
@@ -25,6 +34,21 @@ export function useWebSocket(user) {
   useEffect(() => { addNotificationRef.current = addNotification; }, [addNotification]);
   useEffect(() => { addToastRef.current = addToast; }, [addToast]);
   useEffect(() => { fetchConversationsRef.current = fetchConversations; }, [fetchConversations]);
+
+  const handleIncomingMessage = useCallback((conversationId, raw) => {
+    let msg;
+    try {
+      msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {
+      console.warn('WebSocket: failed to parse message payload');
+      return;
+    }
+    if (!isValidWsMessage(msg)) {
+      console.warn('WebSocket: ignoring invalid message payload', msg);
+      return;
+    }
+    addMessageRef.current(conversationId ?? msg.conversationId, msg);
+  }, []);
 
   // Stable connect function — only depends on user identity, NOT conversations
   const connect = useCallback(() => {
@@ -57,8 +81,8 @@ export function useWebSocket(user) {
         client.subscribe('/user/queue/messages', (frame) => {
           try {
             const msg = JSON.parse(frame.body);
-            if (msg.conversationId) {
-              addMessageRef.current(msg.conversationId, msg);
+            if (msg?.conversationId) {
+              handleIncomingMessage(msg.conversationId, msg);
             }
           } catch {}
         });
@@ -74,7 +98,7 @@ export function useWebSocket(user) {
 
     client.activate();
     clientRef.current = client;
-  }, [user]);
+  }, [user, handleIncomingMessage]);
 
   // Connect when user logs in — stable dependency, won't loop
   useEffect(() => {
@@ -97,14 +121,13 @@ export function useWebSocket(user) {
         const dest = `/topic/conversation.${conv.id}`;
         client.subscribe(dest, (frame) => {
           try {
-            const msg = JSON.parse(frame.body);
-            addMessageRef.current(conv.id, msg);
+            handleIncomingMessage(conv.id, frame.body);
           } catch {}
         });
         subscribedConvIds.current.add(conv.id);
       }
     });
-  }, [conversations]);
+  }, [conversations, handleIncomingMessage]);
 
   return clientRef;
 }

@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { conversationsApi } from '../api/conversations';
 import { messagesApi } from '../api/messages';
+import { useUiStore } from './uiStore';
+
+function isValidMessage(message) {
+  return (
+    message != null &&
+    typeof message === 'object' &&
+    message.id != null &&
+    typeof message.content === 'string'
+  );
+}
 
 export const useChatStore = create((set, get) => ({
   conversations: [],
@@ -47,7 +57,7 @@ export const useChatStore = create((set, get) => ({
 
     try {
       const data = await messagesApi.getByConversation(conversationId, pagination.page);
-      const newMessages = data.content || [];
+      const newMessages = (data.content || []).filter(isValidMessage);
       set((s) => ({
         messages: {
           ...s.messages,
@@ -81,18 +91,24 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (conversationId, content) => {
     try {
       const msg = await messagesApi.send(conversationId, { content, type: 'TEXT' });
+      if (!isValidMessage(msg)) {
+        useUiStore.getState().addToast('Failed to send message', 'error');
+        return null;
+      }
       get().addMessage(conversationId, msg);
       return msg;
-    } catch {
+    } catch (err) {
+      useUiStore.getState().addToast(err.message || 'Failed to send message', 'error');
       return null;
     }
   },
 
   addMessage: (conversationId, message) => {
+    if (!isValidMessage(message)) return;
+
     set((s) => {
       const existing = s.messages[conversationId] || [];
-      // Avoid duplicates
-      if (existing.find((m) => m.id === message.id)) return s;
+      if (existing.some((m) => m?.id != null && m.id === message.id)) return s;
       return {
         messages: {
           ...s.messages,
@@ -107,7 +123,7 @@ export const useChatStore = create((set, get) => ({
       messages: {
         ...s.messages,
         [conversationId]: (s.messages[conversationId] || []).map((m) =>
-          m.id === messageId ? { ...m, ...updates } : m
+          m?.id === messageId ? { ...m, ...updates } : m
         ),
       },
     }));
@@ -118,7 +134,7 @@ export const useChatStore = create((set, get) => ({
       messages: {
         ...s.messages,
         [conversationId]: (s.messages[conversationId] || []).map((m) =>
-          m.id === messageId ? { ...m, deleted: true, content: 'This message was deleted' } : m
+          m?.id === messageId ? { ...m, deleted: true, content: 'This message was deleted' } : m
         ),
       },
     }));

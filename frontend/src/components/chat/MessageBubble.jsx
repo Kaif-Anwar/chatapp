@@ -3,6 +3,10 @@ import { formatMessageTime } from '../../utils/formatDate';
 import { Pencil, Trash2 } from 'lucide-react';
 
 export default function MessageBubble({ message, isSent, showSender, onEdit, onDelete }) {
+  if (!message || typeof message !== 'object' || message.id == null) {
+    return null;
+  }
+
   const { content, senderUsername, createdAt, editedAt, deleted } = message;
 
   if (deleted) {

@@ -7,6 +7,7 @@ import { messagesApi } from '../../api/messages';
 import { useUiStore } from '../../stores/uiStore';
 
 export default function MessageArea({ conversationId, currentUserId }) {
+  const userId = Number(currentUserId);
   const messages = useChatStore((s) => s.messages[conversationId] || []);
   const pagination = useChatStore((s) => s.messagePagination[conversationId]);
   const loadMore = useChatStore((s) => s.loadMoreMessages);
@@ -75,18 +76,21 @@ export default function MessageArea({ conversationId, currentUserId }) {
       )}
 
       {messages.map((msg, idx) => {
+        if (!msg || msg.id == null) return null;
+
         const prev = messages[idx - 1];
+        const senderId = Number(msg.senderId);
         const showDay = !prev || !isSameDay(prev.createdAt, msg.createdAt);
-        const showSender = msg.senderId !== currentUserId && (!prev || prev.senderId !== msg.senderId);
+        const showSender = senderId !== userId && (!prev || Number(prev.senderId) !== senderId);
 
         return (
-          <div key={msg.id || idx}>
+          <div key={msg.id}>
             {showDay && (
               <div className="day-separator">{formatDayLabel(msg.createdAt)}</div>
             )}
             <MessageBubble
               message={msg}
-              isSent={msg.senderId === currentUserId}
+              isSent={senderId === userId}
               showSender={showSender}
               onEdit={handleEdit}
               onDelete={handleDelete}

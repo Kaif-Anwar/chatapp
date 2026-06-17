@@ -4,6 +4,7 @@ import ChatHeader from '../components/chat/ChatHeader';
 import MessageArea from '../components/chat/MessageArea';
 import MessageInput from '../components/chat/MessageInput';
 import EmptyState from '../components/chat/EmptyState';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useChatStore } from '../stores/chatStore';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
@@ -39,17 +40,19 @@ export default function ChatPage() {
     <div className="chat-layout">
       <Sidebar />
 
-      {activeConversation ? (
-        <div className="message-area">
-          <ChatHeader conversation={activeConversation} currentUserId={user?.id} />
-          <MessageArea conversationId={activeId} currentUserId={user?.id} />
-          <MessageInput onSend={handleSend} />
-        </div>
-      ) : (
-        <div className="message-area">
-          <EmptyState />
-        </div>
-      )}
+      <ErrorBoundary>
+        {activeConversation ? (
+          <div className="message-area">
+            <ChatHeader conversation={activeConversation} currentUserId={user?.id} />
+            <MessageArea conversationId={activeId} currentUserId={user?.id} />
+            <MessageInput onSend={handleSend} />
+          </div>
+        ) : (
+          <div className="message-area">
+            <EmptyState />
+          </div>
+        )}
+      </ErrorBoundary>
     </div>
   );
 }

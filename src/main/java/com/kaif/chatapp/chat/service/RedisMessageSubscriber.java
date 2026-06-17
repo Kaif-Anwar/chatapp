@@ -30,11 +30,12 @@ public class RedisMessageSubscriber implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         try {
             String payload = new String(message.getBody());
-            // Remove outer quotes if Redis serializer wraps it
-            if (payload.startsWith("\"") && payload.endsWith("\"")) {
-                payload = objectMapper.readValue(payload, String.class);
-            }
             MessageDTO messageDTO = objectMapper.readValue(payload, MessageDTO.class);
+
+            if (messageDTO.getId() == null || messageDTO.getConversationId() == null) {
+                log.warn("Ignoring Redis message with missing id or conversationId");
+                return;
+            }
 
             // Broadcast to the conversation topic
             String destination = "/topic/conversation." + messageDTO.getConversationId();
