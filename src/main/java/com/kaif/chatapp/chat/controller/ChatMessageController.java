@@ -14,7 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,6 +36,26 @@ public class ChatMessageController {
             @Valid @RequestBody SendMessageRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(messageService.sendMessage(conversationId, user, request));
+    }
+
+    @PostMapping("/attachment")
+    @Operation(summary = "Send a message with file/image attachment")
+    public ResponseEntity<MessageDTO> sendAttachment(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long conversationId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "content", required = false) String content) throws IOException {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(messageService.sendMessageWithAttachment(conversationId, user, file, content));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search messages in conversation")
+    public ResponseEntity<List<MessageDTO>> searchMessages(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long conversationId,
+            @RequestParam String q) {
+        return ResponseEntity.ok(messageService.searchMessages(conversationId, user, q));
     }
 
     @GetMapping

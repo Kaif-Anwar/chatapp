@@ -5,6 +5,9 @@ import com.kaif.chatapp.notification.dto.NotificationDTO;
 import com.kaif.chatapp.notification.model.Notification;
 import com.kaif.chatapp.notification.model.NotificationType;
 import com.kaif.chatapp.notification.repository.NotificationRepository;
+import com.kaif.chatapp.mobile.repository.DeviceTokenRepository;
+import com.kaif.chatapp.mobile.service.PushNotificationService;
+import com.kaif.chatapp.presence.service.PresenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,9 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final DeviceTokenRepository deviceTokenRepository;
+    private final PushNotificationService pushNotificationService;
+    private final PresenceService presenceService;
 
     /**
      * Creates a notification and pushes it to the recipient via WebSocket.
@@ -44,6 +50,12 @@ public class NotificationService {
                 recipientUserId.toString(),
                 "/queue/notifications",
                 dto);
+
+        if (!presenceService.isOnline(recipientUserId)) {
+            var tokens = deviceTokenRepository.findByUserId(recipientUserId).stream()
+                    .map(t -> t.getToken()).toList();
+            pushNotificationService.sendToUser(recipientUserId, tokens, title, body);
+        }
 
         log.debug("Notification pushed to user {}: {}", recipientUserId, title);
     }

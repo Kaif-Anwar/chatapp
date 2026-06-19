@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,9 +28,13 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final PasswordResetService passwordResetService;
 
     @Value("${jwt.refresh-expiry-ms}")
     private long refreshExpiryMs;
+
+    @Value("${app.auth.require-email-verification:false}")
+    private boolean requireEmailVerification;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -50,6 +55,8 @@ public class AuthService {
         user = userRepository.save(user);
         log.info("User registered: {} ({})", user.getDisplayUsername(), user.getEmail());
 
+        passwordResetService.sendVerificationEmail(user);
+
         return generateAuthResponse(user);
     }
 
@@ -61,8 +68,32 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        if (requireEmailVerification && !user.isEmailVerified()) {
+            throw new UnauthorizedException("Please verify your email before logging in");
+        }
+
         log.info("User logged in: {}", user.getDisplayUsername());
         return generateAuthResponse(user);
+    }
+
+    public AuthResponse loginExistingUser(User user) {
+        return generateAuthResponse(user);
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+        passwordResetService.requestPasswordReset(request.getEmail());
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+    }
+
+    public void verifyEmail(VerifyEmailRequest request) {
+        passwordResetService.verifyEmail(request.getToken());
+    }
+
+    public void resendVerification(ForgotPasswordRequest request) {
+        passwordResetService.resendVerification(request.getEmail());
     }
 
     @Transactional

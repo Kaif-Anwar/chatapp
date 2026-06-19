@@ -13,32 +13,36 @@ export default function MessageArea({ conversationId, currentUserId }) {
   const loadMore = useChatStore((s) => s.loadMoreMessages);
   const updateMessage = useChatStore((s) => s.updateMessage);
   const removeMessage = useChatStore((s) => s.removeMessage);
+  const markLatestRead = useChatStore((s) => s.markLatestRead);
   const addToast = useUiStore((s) => s.addToast);
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const prevLengthRef = useRef(0);
 
-  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (conversationId && currentUserId) {
+      markLatestRead(conversationId, currentUserId);
+    }
+  }, [conversationId, currentUserId, messages.length, markLatestRead]);
+
   useEffect(() => {
     if (messages.length > prevLengthRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      markLatestRead(conversationId, currentUserId);
     }
     prevLengthRef.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, conversationId, currentUserId, markLatestRead]);
 
-  // Scroll to bottom on conversation change
   useEffect(() => {
     bottomRef.current?.scrollIntoView();
     prevLengthRef.current = messages.length;
   }, [conversationId]);
 
-  // Load more on scroll to top
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (el && el.scrollTop < 50 && pagination && !pagination.loading && pagination.page < pagination.totalPages) {
       const prevHeight = el.scrollHeight;
       loadMore(conversationId);
-      // Restore scroll position after prepending
       requestAnimationFrame(() => {
         el.scrollTop = el.scrollHeight - prevHeight;
       });

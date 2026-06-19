@@ -1,8 +1,8 @@
 import Avatar from '../common/Avatar';
-import { Phone, Video, Info, Menu } from 'lucide-react';
+import { Phone, Video, Info, Menu, Search } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 
-export default function ChatHeader({ conversation, currentUserId }) {
+export default function ChatHeader({ conversation, currentUserId, typingText }) {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const openModal = useUiStore((s) => s.openModal);
 
@@ -23,7 +23,7 @@ export default function ChatHeader({ conversation, currentUserId }) {
 
   return (
     <div className="chat-header">
-      <button className="btn-icon mobile-menu-btn" onClick={toggleSidebar} style={{ display: 'none' }}>
+      <button className="btn-icon mobile-menu-btn" onClick={toggleSidebar} aria-label="Open conversations">
         <Menu size={20} />
       </button>
       <Avatar
@@ -35,7 +35,7 @@ export default function ChatHeader({ conversation, currentUserId }) {
       <div className="chat-header-info">
         <div className="chat-header-name">{displayName}</div>
         <div className={`chat-header-status ${otherUser?.status === 'ONLINE' ? 'online' : ''}`}>
-          {statusText}
+          {typingText || statusText}
         </div>
       </div>
       {type === 'GROUP' && (
@@ -43,6 +43,9 @@ export default function ChatHeader({ conversation, currentUserId }) {
           <Info size={18} />
         </button>
       )}
+      <button className="btn-icon" onClick={() => openModal('searchMessages', conversation.id)} title="Search messages">
+        <Search size={18} />
+      </button>
     </div>
   );
 }

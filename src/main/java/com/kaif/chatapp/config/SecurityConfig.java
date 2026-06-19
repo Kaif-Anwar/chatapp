@@ -1,6 +1,7 @@
 package com.kaif.chatapp.config;
 
 import com.kaif.chatapp.security.JwtAuthFilter;
+import com.kaif.chatapp.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     /** Comma-separated allowed origins — set via CORS_ORIGINS env var in production. */
     @Value("${app.cors.origins:http://localhost:5173,http://localhost:3000}")
@@ -58,6 +60,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

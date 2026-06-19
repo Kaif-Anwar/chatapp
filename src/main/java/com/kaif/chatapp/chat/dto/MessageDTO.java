@@ -21,4 +21,6 @@ public class MessageDTO {
     private LocalDateTime createdAt;
     private LocalDateTime editedAt;
     private boolean deleted;
+    private String attachmentUrl;
+    private String attachmentName;
 }

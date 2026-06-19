@@ -5,6 +5,9 @@ import com.kaif.chatapp.notification.model.Notification;
 import com.kaif.chatapp.notification.model.NotificationType;
 import com.kaif.chatapp.notification.repository.NotificationRepository;
 import com.kaif.chatapp.notification.service.NotificationService;
+import com.kaif.chatapp.mobile.repository.DeviceTokenRepository;
+import com.kaif.chatapp.mobile.service.PushNotificationService;
+import com.kaif.chatapp.presence.service.PresenceService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +27,9 @@ class NotificationServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private DeviceTokenRepository deviceTokenRepository;
+    @Mock private PushNotificationService pushNotificationService;
+    @Mock private PresenceService presenceService;
 
     @InjectMocks private NotificationService notificationService;
 
@@ -36,6 +42,7 @@ class NotificationServiceTest {
             n.setCreatedAt(LocalDateTime.now());
             return n;
         });
+        when(presenceService.isOnline(2L)).thenReturn(true);
 
         notificationService.createAndPush(2L, NotificationType.NEW_MESSAGE,
                 "kaif sent a message", "Hello!", 5L);

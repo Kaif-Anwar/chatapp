@@ -212,9 +212,12 @@ public class ChatService {
         List<ConversationParticipant> participants = participantRepository.findByConversationId(conversation.getId());
 
         List<UserDTO> participantDTOs = participants.stream()
-                .map(p -> userRepository.findById(p.getUserId()).orElse(null))
+                .map(p -> userRepository.findById(p.getUserId()).map(u -> {
+                    UserDTO dto = userService.toDTO(u);
+                    dto.setAdmin(p.isAdmin());
+                    return dto;
+                }).orElse(null))
                 .filter(u -> u != null)
-                .map(userService::toDTO)
                 .collect(Collectors.toList());
 
         // Get last message
@@ -265,6 +268,8 @@ public class ChatService {
                 .createdAt(message.getCreatedAt())
                 .editedAt(message.getEditedAt())
                 .deleted(message.isDeleted())
+                .attachmentUrl(message.getAttachmentUrl())
+                .attachmentName(message.getAttachmentName())
                 .build();
     }
 }

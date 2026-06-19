@@ -7,6 +7,7 @@ import com.kaif.chatapp.auth.dto.RefreshTokenRequest;
 import com.kaif.chatapp.auth.model.RefreshToken;
 import com.kaif.chatapp.auth.repository.RefreshTokenRepository;
 import com.kaif.chatapp.auth.service.AuthService;
+import com.kaif.chatapp.auth.service.PasswordResetService;
 import com.kaif.chatapp.exception.DuplicateResourceException;
 import com.kaif.chatapp.exception.UnauthorizedException;
 import com.kaif.chatapp.security.JwtUtil;
@@ -35,12 +36,14 @@ class AuthServiceTest {
     @Mock private RefreshTokenRepository refreshTokenRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtUtil jwtUtil;
+    @Mock private PasswordResetService passwordResetService;
 
     @InjectMocks private AuthService authService;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(authService, "refreshExpiryMs", 604800000L);
+        ReflectionTestUtils.setField(authService, "requireEmailVerification", false);
     }
 
     @Test

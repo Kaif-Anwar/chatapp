@@ -52,6 +52,10 @@ public class User implements UserDetails {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(name = "email_verified")
+    @Builder.Default
+    private boolean emailVerified = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

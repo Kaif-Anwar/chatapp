@@ -8,6 +8,7 @@ import com.kaif.chatapp.chat.repository.*;
 import com.kaif.chatapp.chat.service.ChatService;
 import com.kaif.chatapp.chat.service.MessageService;
 import com.kaif.chatapp.chat.service.RedisMessagePublisher;
+import com.kaif.chatapp.chat.service.MessageAttachmentService;
 import com.kaif.chatapp.exception.ForbiddenException;
 import com.kaif.chatapp.notification.service.NotificationService;
 import com.kaif.chatapp.user.model.User;
@@ -36,6 +37,8 @@ class MessageServiceTest {
     @Mock private ChatService chatService;
     @Mock private NotificationService notificationService;
     @Mock private RedisMessagePublisher redisMessagePublisher;
+    @Mock private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    @Mock private MessageAttachmentService attachmentService;
 
     @InjectMocks private MessageService messageService;
 

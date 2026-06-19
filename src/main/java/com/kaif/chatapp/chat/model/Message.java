@@ -50,4 +50,10 @@ public class Message {
     @Column(name = "is_deleted")
     @Builder.Default
     private boolean isDeleted = false;
+
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
+
+    @Column(name = "attachment_name")
+    private String attachmentName;
 }

@@ -23,8 +23,14 @@ export function useWebSocket(user) {
   const fetchConversations = useChatStore((s) => s.fetchConversations);
   const addNotification = useNotificationStore((s) => s.addNotification);
   const addToast = useUiStore((s) => s.addToast);
+  const setTypingUsers = useChatStore((s) => s.setTypingUsers);
+  const updateMessageStatus = useChatStore((s) => s.updateMessageStatus);
 
-  // Use refs to keep callbacks stable and avoid dependency cycles
+  const setTypingUsersRef = useRef(setTypingUsers);
+  const updateMessageStatusRef = useRef(updateMessageStatus);
+
+  useEffect(() => { setTypingUsersRef.current = setTypingUsers; }, [setTypingUsers]);
+  useEffect(() => { updateMessageStatusRef.current = updateMessageStatus; }, [updateMessageStatus]);
   const addMessageRef = useRef(addMessage);
   const addNotificationRef = useRef(addNotification);
   const addToastRef = useRef(addToast);
@@ -120,8 +126,20 @@ export function useWebSocket(user) {
       if (!subscribedConvIds.current.has(conv.id)) {
         const dest = `/topic/conversation.${conv.id}`;
         client.subscribe(dest, (frame) => {
+          try { handleIncomingMessage(conv.id, frame.body); } catch {}
+        });
+        client.subscribe(`/topic/conversation.${conv.id}.typing`, (frame) => {
           try {
-            handleIncomingMessage(conv.id, frame.body);
+            const event = JSON.parse(frame.body);
+            setTypingUsersRef.current(conv.id, [...(event.typingUsers || [])]);
+          } catch {}
+        });
+        client.subscribe(`/topic/conversation.${conv.id}.read`, (frame) => {
+          try {
+            const event = JSON.parse(frame.body);
+            if (event.messageId && event.status) {
+              updateMessageStatusRef.current(conv.id, event.messageId, event.status);
+            }
           } catch {}
         });
         subscribedConvIds.current.add(conv.id);

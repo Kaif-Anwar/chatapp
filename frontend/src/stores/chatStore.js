@@ -17,6 +17,7 @@ export const useChatStore = create((set, get) => ({
   activeConversationId: null,
   messages: {},          // { [convId]: Message[] }
   messagePagination: {}, // { [convId]: { page, totalPages, loading } }
+  typingUsers: {},       // { [convId]: string[] }
   loadingConversations: false,
 
   // ── Conversations ──────────────────────────────────────────
@@ -101,6 +102,48 @@ export const useChatStore = create((set, get) => ({
       useUiStore.getState().addToast(err.message || 'Failed to send message', 'error');
       return null;
     }
+  },
+
+  sendAttachment: async (conversationId, file, content = '') => {
+    try {
+      const msg = await messagesApi.sendAttachment(conversationId, file, content);
+      if (!isValidMessage(msg)) {
+        useUiStore.getState().addToast('Failed to send attachment', 'error');
+        return null;
+      }
+      get().addMessage(conversationId, msg);
+      return msg;
+    } catch (err) {
+      useUiStore.getState().addToast(err.message || 'Failed to send attachment', 'error');
+      return null;
+    }
+  },
+
+  markLatestRead: async (conversationId, currentUserId) => {
+    const msgs = get().messages[conversationId] || [];
+    const lastFromOther = [...msgs].reverse().find((m) => m?.senderId != null && Number(m.senderId) !== Number(currentUserId));
+    if (lastFromOther?.id) {
+      try {
+        await messagesApi.markRead(conversationId, lastFromOther.id);
+      } catch {}
+    }
+  },
+
+  setTypingUsers: (conversationId, users) => {
+    set((s) => ({
+      typingUsers: { ...s.typingUsers, [conversationId]: users || [] },
+    }));
+  },
+
+  updateMessageStatus: (conversationId, messageId, status) => {
+    set((s) => ({
+      messages: {
+        ...s.messages,
+        [conversationId]: (s.messages[conversationId] || []).map((m) =>
+          m?.id === messageId ? { ...m, status } : m
+        ),
+      },
+    }));
   },
 
   addMessage: (conversationId, message) => {

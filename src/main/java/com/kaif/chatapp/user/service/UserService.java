@@ -75,6 +75,7 @@ public class UserService {
                 .avatarUrl(user.getAvatarUrl())
                 .status(status)
                 .createdAt(user.getCreatedAt())
+                .emailVerified(user.isEmailVerified())
                 .build();
     }
 }

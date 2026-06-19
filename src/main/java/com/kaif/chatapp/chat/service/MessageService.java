@@ -12,9 +12,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +33,43 @@ public class MessageService {
     private final ChatService chatService;
     private final NotificationService notificationService;
     private final RedisMessagePublisher redisMessagePublisher;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final MessageAttachmentService attachmentService;
+
+    @Transactional
+    public MessageDTO sendMessageWithAttachment(Long conversationId, User sender, MultipartFile file, String content) throws IOException {
+        chatService.validateParticipant(conversationId, sender.getId());
+        var stored = attachmentService.store(file, sender.getId());
+        MessageType type = stored.image() ? MessageType.IMAGE : MessageType.FILE;
+
+        Message message = Message.builder()
+                .conversationId(conversationId)
+                .senderId(sender.getId())
+                .content(content != null && !content.isBlank() ? content : stored.originalName())
+                .type(type)
+                .status(MessageStatus.SENT)
+                .attachmentUrl(stored.url())
+                .attachmentName(stored.originalName())
+                .build();
+
+        message = messageRepository.save(message);
+        MessageDTO dto = toDTO(message);
+        redisMessagePublisher.publish(conversationId, dto);
+        notifyRecipients(conversationId, sender, dto.getContent());
+        return dto;
+    }
+
+    private void notifyRecipients(Long conversationId, User sender, String contentPreview) {
+        List<Long> recipientIds = participantRepository.findByConversationId(conversationId).stream()
+                .map(ConversationParticipant::getUserId)
+                .filter(id -> !id.equals(sender.getId()))
+                .collect(Collectors.toList());
+
+        notificationService.notifyUsers(recipientIds, NotificationType.NEW_MESSAGE,
+                sender.getDisplayUsername() + " sent a message",
+                contentPreview.length() > 100 ? contentPreview.substring(0, 100) + "..." : contentPreview,
+                conversationId);
+    }
 
     @Transactional
     public MessageDTO sendMessage(Long conversationId, User sender, SendMessageRequest request) {
@@ -50,19 +90,20 @@ public class MessageService {
         // Publish to Redis for real-time delivery
         redisMessagePublisher.publish(conversationId, dto);
 
-        // Send notifications to other participants
-        List<Long> recipientIds = participantRepository.findByConversationId(conversationId).stream()
-                .map(ConversationParticipant::getUserId)
-                .filter(id -> !id.equals(sender.getId()))
-                .collect(Collectors.toList());
-
-        notificationService.notifyUsers(recipientIds, NotificationType.NEW_MESSAGE,
-                sender.getDisplayUsername() + " sent a message",
-                request.getContent().length() > 100 ? request.getContent().substring(0, 100) + "..." : request.getContent(),
-                conversationId);
+        notifyRecipients(conversationId, sender, request.getContent());
 
         log.debug("Message {} sent by user {} in conversation {}", message.getId(), sender.getId(), conversationId);
         return dto;
+    }
+
+    public List<MessageDTO> searchMessages(Long conversationId, User currentUser, String query) {
+        chatService.validateParticipant(conversationId, currentUser.getId());
+        if (query == null || query.trim().length() < 2) {
+            return List.of();
+        }
+        return messageRepository.searchInConversation(conversationId, query.trim()).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public Page<MessageDTO> getMessageHistory(Long conversationId, User currentUser, Pageable pageable) {
@@ -138,6 +179,14 @@ public class MessageService {
         if (message.getStatus() != MessageStatus.READ && !message.getSenderId().equals(currentUser.getId())) {
             message.setStatus(MessageStatus.READ);
             messageRepository.save(message);
+
+            ReadReceiptDTO receipt = ReadReceiptDTO.builder()
+                    .conversationId(conversationId)
+                    .messageId(messageId)
+                    .readerId(currentUser.getId())
+                    .status(MessageStatus.READ.name())
+                    .build();
+            messagingTemplate.convertAndSend("/topic/conversation." + conversationId + ".read", receipt);
         }
     }
 
@@ -169,6 +218,8 @@ public class MessageService {
                 .createdAt(message.getCreatedAt())
                 .editedAt(message.getEditedAt())
                 .deleted(message.isDeleted())
+                .attachmentUrl(message.getAttachmentUrl())
+                .attachmentName(message.getAttachmentName())
                 .build();
     }
 }

@@ -20,4 +20,7 @@ public class UserDTO {
     private String avatarUrl;
     private UserStatus status;
     private LocalDateTime createdAt;
+    /** Set when user is listed as a conversation participant (group admin flag). */
+    private Boolean admin;
+    private Boolean emailVerified;
 }

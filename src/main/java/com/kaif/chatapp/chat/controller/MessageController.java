@@ -4,6 +4,7 @@ import com.kaif.chatapp.chat.dto.MessageDTO;
 import com.kaif.chatapp.chat.dto.SendMessageRequest;
 import com.kaif.chatapp.chat.model.MessageType;
 import com.kaif.chatapp.chat.service.MessageService;
+import com.kaif.chatapp.chat.service.TypingService;
 import com.kaif.chatapp.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class MessageController {
 
     private final MessageService messageService;
+    private final TypingService typingService;
 
     /**
      * Handles messages sent via STOMP to /app/chat.send
@@ -63,5 +65,15 @@ public class MessageController {
 
         messageService.markMessageAsRead(conversationId, messageId, user);
         log.debug("Message {} marked as read by user {} in conversation {}", messageId, user.getId(), conversationId);
+    }
+
+    @MessageMapping("/chat.typing")
+    public void typing(@Payload Map<String, Object> payload, Principal principal) {
+        if (principal == null) return;
+
+        User user = (User) ((org.springframework.security.authentication.UsernamePasswordAuthenticationToken) principal).getPrincipal();
+        Long conversationId = Long.valueOf(payload.get("conversationId").toString());
+        boolean typing = Boolean.parseBoolean(payload.getOrDefault("typing", true).toString());
+        typingService.setTyping(conversationId, user.getId(), user.getDisplayUsername(), typing);
     }
 }

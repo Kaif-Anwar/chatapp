@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -43,5 +45,33 @@ public class AuthController {
     public ResponseEntity<Void> logout(@AuthenticationPrincipal User user) {
         authService.logout(user);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request password reset email")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(Map.of("message", "If that email exists, a reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password with token")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+    }
+
+    @PostMapping("/verify-email")
+    @Operation(summary = "Verify email with token")
+    public ResponseEntity<Map<String, String>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request);
+        return ResponseEntity.ok(Map.of("message", "Email verified successfully."));
+    }
+
+    @PostMapping("/resend-verification")
+    @Operation(summary = "Resend email verification")
+    public ResponseEntity<Map<String, String>> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.resendVerification(request);
+        return ResponseEntity.ok(Map.of("message", "If that email exists and is unverified, a link has been sent."));
     }
 }
