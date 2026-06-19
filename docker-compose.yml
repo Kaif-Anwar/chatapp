@@ -47,6 +47,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      # Email (password reset + verification) — values from /root/chatapp/.env on server
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@mychatsweb.tech}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://mychatsweb.tech}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
     volumes:
       - antigravity_uploads:/app/uploads
     depends_on:
