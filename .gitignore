@@ -44,5 +44,11 @@ frontend/.env.production
 
 ### Internal project docs ###
 security_audit.md
+testing_plan.md
 task.md
 chat_app_project_doc.md
+DEPLOY.md
+PROJECT_KNOWLEDGE_BASE.md
+post_knowledge_base_updates.md
+ITERATION_CHANGELOG.md
+error_file.txt
