@@ -18,6 +18,8 @@ import java.util.Map;
 
 /**
  * Redis-backed per-user (or per-IP for public routes) rate limiting.
+ * Behind nginx, {@link HttpServletRequest#getRemoteAddr()} is the proxy IP;
+ * client identity comes from X-Real-IP / X-Forwarded-For.
  */
 @Component
 @RequiredArgsConstructor
@@ -65,8 +67,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (auth != null && auth.getPrincipal() instanceof com.kaif.chatapp.user.model.User user) {
             return "ratelimit:user:" + user.getId() + ":" + request.getMethod() + ":" + simplifyPath(request.getRequestURI());
         }
-        String ip = request.getRemoteAddr();
+        String ip = resolveClientIp(request);
         return "ratelimit:ip:" + ip + ":" + request.getMethod() + ":" + simplifyPath(request.getRequestURI());
+    }
+
+    /** Prefer nginx X-Real-IP, then first X-Forwarded-For hop, else direct remote address. */
+    static String resolveClientIp(HttpServletRequest request) {
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank() && !"unknown".equalsIgnoreCase(realIp)) {
+            return realIp.trim();
+        }
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            return (comma >= 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private String simplifyPath(String path) {
