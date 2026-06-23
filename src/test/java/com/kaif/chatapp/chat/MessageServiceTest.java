@@ -21,6 +21,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -95,7 +96,7 @@ class MessageServiceTest {
                 .id(100L).conversationId(5L).senderId(1L)
                 .content("Old content").type(MessageType.TEXT)
                 .status(MessageStatus.SENT).isDeleted(false)
-                .createdAt(LocalDateTime.now()).build();
+                .createdAt(LocalDateTime.now(ZoneOffset.UTC)).build();
 
         doNothing().when(chatService).validateParticipant(5L, 1L);
         when(messageRepository.findById(100L)).thenReturn(Optional.of(existingMessage));
@@ -133,7 +134,7 @@ class MessageServiceTest {
                 .id(100L).conversationId(5L).senderId(1L)
                 .content("Old content").type(MessageType.TEXT)
                 .status(MessageStatus.SENT).isDeleted(false)
-                .createdAt(LocalDateTime.now().minusSeconds(31)).build();
+                .createdAt(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(31)).build();
 
         doNothing().when(chatService).validateParticipant(5L, 1L);
         when(messageRepository.findById(100L)).thenReturn(Optional.of(existingMessage));

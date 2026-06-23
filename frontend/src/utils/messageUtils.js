@@ -3,11 +3,12 @@
  * Prevents render crashes from null content, wrong types, or missing fields.
  */
 
+import { parseApiDateMs } from './parseApiDate';
+
 export const MESSAGE_EDIT_WINDOW_MS = 30_000;
 
 export function canEditMessage(createdAt, now = Date.now()) {
-  if (!createdAt) return false;
-  const sentAt = new Date(createdAt).getTime();
+  const sentAt = parseApiDateMs(createdAt);
   if (Number.isNaN(sentAt)) return false;
   return now - sentAt <= MESSAGE_EDIT_WINDOW_MS;
 }

@@ -1,10 +1,13 @@
+import { parseApiDate } from './parseApiDate';
+
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 export function formatTime(dateStr) {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseApiDate(dateStr);
+  if (!date) return '';
   const now = new Date();
   const diff = now - date;
 
@@ -21,12 +24,15 @@ export function formatTime(dateStr) {
 
 export function formatMessageTime(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const date = parseApiDate(dateStr);
+  if (!date) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatDayLabel(dateStr) {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseApiDate(dateStr);
+  if (!date) return '';
   const now = new Date();
   if (date.toDateString() === now.toDateString()) return 'Today';
   const yesterday = new Date(now);
@@ -37,5 +43,8 @@ export function formatDayLabel(dateStr) {
 
 export function isSameDay(d1, d2) {
   if (!d1 || !d2) return false;
-  return new Date(d1).toDateString() === new Date(d2).toDateString();
+  const a = parseApiDate(d1);
+  const b = parseApiDate(d2);
+  if (!a || !b) return false;
+  return a.toDateString() === b.toDateString();
 }

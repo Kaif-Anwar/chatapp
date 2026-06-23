@@ -3,6 +3,7 @@ import Avatar from '../common/Avatar';
 import { formatMessageTime } from '../../utils/formatDate';
 import { API_BASE_HOST } from '../../utils/constants';
 import { canEditMessage, MESSAGE_EDIT_WINDOW_MS } from '../../utils/messageUtils';
+import { parseApiDateMs } from '../../utils/parseApiDate';
 import { Pencil, Trash2, Check, CheckCheck } from 'lucide-react';
 
 function resolveUrl(src) {
@@ -29,7 +30,7 @@ function useEditWindowOpen(createdAt, isSent) {
     const refresh = () => setEditable(canEditMessage(createdAt));
     refresh();
 
-    const sentAt = new Date(createdAt).getTime();
+    const sentAt = parseApiDateMs(createdAt);
     if (Number.isNaN(sentAt)) {
       setEditable(false);
       return undefined;

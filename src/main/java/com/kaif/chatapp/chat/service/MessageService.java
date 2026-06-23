@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,12 +136,12 @@ public class MessageService {
         }
 
         if (message.getCreatedAt() == null
-                || message.getCreatedAt().plus(MESSAGE_EDIT_WINDOW).isBefore(LocalDateTime.now())) {
+                || LocalDateTime.now(ZoneOffset.UTC).isAfter(message.getCreatedAt().plus(MESSAGE_EDIT_WINDOW))) {
             throw new BadRequestException("Messages can only be edited within 30 seconds of sending");
         }
 
         message.setContent(request.getContent());
-        message.setEditedAt(LocalDateTime.now());
+        message.setEditedAt(LocalDateTime.now(ZoneOffset.UTC));
         message = messageRepository.save(message);
 
         log.debug("Message {} edited by user {}", messageId, currentUser.getId());
