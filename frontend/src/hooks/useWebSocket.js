@@ -5,15 +5,7 @@ import { WS_URL } from '../utils/constants';
 import { useChatStore } from '../stores/chatStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useUiStore } from '../stores/uiStore';
-
-function isValidWsMessage(msg) {
-  return (
-    msg != null &&
-    typeof msg === 'object' &&
-    msg.id != null &&
-    typeof msg.content === 'string'
-  );
-}
+import { isValidMessage } from '../utils/messageUtils';
 
 export function useWebSocket(user) {
   const clientRef = useRef(null);
@@ -49,7 +41,7 @@ export function useWebSocket(user) {
       console.warn('WebSocket: failed to parse message payload');
       return;
     }
-    if (!isValidWsMessage(msg)) {
+    if (!isValidMessage(msg)) {
       console.warn('WebSocket: ignoring invalid message payload', msg);
       return;
     }

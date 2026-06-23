@@ -15,13 +15,14 @@ export default function ChatPage() {
   const user = useAuthStore((s) => s.user);
   const fetchConversations = useChatStore((s) => s.fetchConversations);
   const activeId = useChatStore((s) => s.activeConversationId);
-  const getActive = useChatStore((s) => s.getActiveConversation);
+  const activeConversation = useChatStore((s) =>
+    s.conversations.find((c) => c.id === s.activeConversationId) || null
+  );
   const sendMessage = useChatStore((s) => s.sendMessage);
   const sendAttachment = useChatStore((s) => s.sendAttachment);
   const typingUsers = useChatStore((s) => (activeId ? s.typingUsers[activeId] : null));
   const fetchUnreadCount = useNotificationStore((s) => s.fetchUnreadCount);
 
-  const activeConversation = getActive();
   const stompRef = useWebSocket(user);
   usePresence(stompRef);
 
@@ -49,7 +50,7 @@ export default function ChatPage() {
     } catch {}
   }, [stompRef, activeId]);
 
-  const typingText = typingUsers?.length
+  const typingText = Array.isArray(typingUsers) && typingUsers.length
     ? `${typingUsers.join(', ')} ${typingUsers.length === 1 ? 'is' : 'are'} typing...`
     : '';
 
@@ -57,9 +58,9 @@ export default function ChatPage() {
     <div className="chat-layout">
       <Sidebar />
 
-      <ErrorBoundary>
+      <ErrorBoundary resetKey={activeId ?? 'none'}>
         {activeConversation ? (
-          <div className="message-area">
+          <div className="message-area" key={activeId}>
             <ChatHeader
               conversation={activeConversation}
               currentUserId={user?.id}

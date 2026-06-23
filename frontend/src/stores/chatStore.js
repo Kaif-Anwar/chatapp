@@ -2,15 +2,7 @@ import { create } from 'zustand';
 import { conversationsApi } from '../api/conversations';
 import { messagesApi } from '../api/messages';
 import { useUiStore } from './uiStore';
-
-function isValidMessage(message) {
-  return (
-    message != null &&
-    typeof message === 'object' &&
-    message.id != null &&
-    typeof message.content === 'string'
-  );
-}
+import { normalizeMessage } from '../utils/messageUtils';
 
 export const useChatStore = create((set, get) => ({
   conversations: [],
@@ -33,8 +25,7 @@ export const useChatStore = create((set, get) => ({
 
   setActiveConversation: (id) => {
     set({ activeConversationId: id });
-    // Fetch messages if we don't have them yet
-    if (id && !get().messages[id]) {
+    if (id != null) {
       get().fetchMessages(id);
     }
   },
@@ -58,7 +49,9 @@ export const useChatStore = create((set, get) => ({
 
     try {
       const data = await messagesApi.getByConversation(conversationId, pagination.page);
-      const newMessages = (data.content || []).filter(isValidMessage);
+      const newMessages = (data.content || [])
+        .map(normalizeMessage)
+        .filter(Boolean);
       set((s) => ({
         messages: {
           ...s.messages,
@@ -92,12 +85,13 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async (conversationId, content) => {
     try {
       const msg = await messagesApi.send(conversationId, { content, type: 'TEXT' });
-      if (!isValidMessage(msg)) {
+      const normalized = normalizeMessage(msg);
+      if (!normalized) {
         useUiStore.getState().addToast('Failed to send message', 'error');
         return null;
       }
-      get().addMessage(conversationId, msg);
-      return msg;
+      get().addMessage(conversationId, normalized);
+      return normalized;
     } catch (err) {
       useUiStore.getState().addToast(err.message || 'Failed to send message', 'error');
       return null;
@@ -107,12 +101,13 @@ export const useChatStore = create((set, get) => ({
   sendAttachment: async (conversationId, file, content = '') => {
     try {
       const msg = await messagesApi.sendAttachment(conversationId, file, content);
-      if (!isValidMessage(msg)) {
+      const normalized = normalizeMessage(msg);
+      if (!normalized) {
         useUiStore.getState().addToast('Failed to send attachment', 'error');
         return null;
       }
-      get().addMessage(conversationId, msg);
-      return msg;
+      get().addMessage(conversationId, normalized);
+      return normalized;
     } catch (err) {
       useUiStore.getState().addToast(err.message || 'Failed to send attachment', 'error');
       return null;
@@ -130,8 +125,9 @@ export const useChatStore = create((set, get) => ({
   },
 
   setTypingUsers: (conversationId, users) => {
+    const list = Array.isArray(users) ? users : [];
     set((s) => ({
-      typingUsers: { ...s.typingUsers, [conversationId]: users || [] },
+      typingUsers: { ...s.typingUsers, [conversationId]: list },
     }));
   },
 
@@ -147,15 +143,16 @@ export const useChatStore = create((set, get) => ({
   },
 
   addMessage: (conversationId, message) => {
-    if (!isValidMessage(message)) return;
+    const normalized = normalizeMessage(message);
+    if (!normalized) return;
 
     set((s) => {
       const existing = s.messages[conversationId] || [];
-      if (existing.some((m) => m?.id != null && m.id === message.id)) return s;
+      if (existing.some((m) => m?.id != null && m.id === normalized.id)) return s;
       return {
         messages: {
           ...s.messages,
-          [conversationId]: [...existing, message],
+          [conversationId]: [...existing, normalized],
         },
       };
     });

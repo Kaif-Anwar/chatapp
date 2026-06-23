@@ -21,6 +21,7 @@ export default function MessageBubble({ message, isSent, showSender, onEdit, onD
   }
 
   const { content, senderUsername, createdAt, editedAt, deleted, attachmentUrl, attachmentName, type, status } = message;
+  const safeContent = typeof content === 'string' ? content : '';
 
   if (deleted) {
     return (
@@ -49,7 +50,7 @@ export default function MessageBubble({ message, isSent, showSender, onEdit, onD
             📎 {attachmentName || 'Download file'}
           </a>
         )}
-        {content && <p>{content}</p>}
+        {safeContent && <p>{safeContent}</p>}
         <div className="message-time" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           {editedAt && <span className="message-edited">edited · </span>}
           {formatMessageTime(createdAt)}

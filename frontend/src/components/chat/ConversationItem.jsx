@@ -8,15 +8,18 @@ export default function ConversationItem({ conversation, active, currentUserId, 
   let displayName = name;
   let otherUser = null;
   if (type === 'PRIVATE' && participants) {
-    otherUser = participants.find((p) => p.id !== currentUserId);
+    const uid = Number(currentUserId);
+    otherUser = participants.find((p) => Number(p.id) !== uid);
     displayName = otherUser?.displayName || otherUser?.username || name || 'Chat';
   }
 
-  const preview = lastMessage?.content
+  const preview = typeof lastMessage?.content === 'string' && lastMessage.content
     ? lastMessage.content.length > 40
       ? lastMessage.content.substring(0, 40) + '...'
       : lastMessage.content
-    : 'No messages yet';
+    : lastMessage?.attachmentUrl
+      ? '📎 Attachment'
+      : 'No messages yet';
 
   return (
     <div className={`conv-item ${active ? 'active' : ''}`} onClick={onClick} id={`conv-${conversation.id}`}>

@@ -11,6 +11,7 @@ export default function MessageArea({ conversationId, currentUserId }) {
   const messages = useChatStore((s) => s.messages[conversationId] || []);
   const pagination = useChatStore((s) => s.messagePagination[conversationId]);
   const loadMore = useChatStore((s) => s.loadMoreMessages);
+  const fetchMessages = useChatStore((s) => s.fetchMessages);
   const updateMessage = useChatStore((s) => s.updateMessage);
   const removeMessage = useChatStore((s) => s.removeMessage);
   const markLatestRead = useChatStore((s) => s.markLatestRead);
@@ -18,6 +19,12 @@ export default function MessageArea({ conversationId, currentUserId }) {
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const prevLengthRef = useRef(0);
+
+  useEffect(() => {
+    if (conversationId) {
+      fetchMessages(conversationId);
+    }
+  }, [conversationId, fetchMessages]);
 
   useEffect(() => {
     if (conversationId && currentUserId) {
@@ -71,9 +78,17 @@ export default function MessageArea({ conversationId, currentUserId }) {
     }
   };
 
+  const showInitialLoader = Boolean(conversationId) && !pagination && messages.length === 0;
+
   return (
     <div className="messages-container" ref={containerRef} onScroll={handleScroll}>
-      {pagination?.loading && (
+      {(showInitialLoader || pagination?.loading) && messages.length === 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
+          <Spinner size="sm" />
+        </div>
+      )}
+
+      {pagination?.loading && messages.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px' }}>
           <Spinner size="sm" />
         </div>

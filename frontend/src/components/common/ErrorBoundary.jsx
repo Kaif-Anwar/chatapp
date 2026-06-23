@@ -10,6 +10,12 @@ export default class ErrorBoundary extends Component {
     return { hasError: true, error };
   }
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   componentDidCatch(error, info) {
     console.error('Chat UI error:', error, info);
   }

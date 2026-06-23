@@ -14,7 +14,8 @@ export default function ChatHeader({ conversation, currentUserId, typingText }) 
   let otherUser = null;
 
   if (type === 'PRIVATE' && participants) {
-    otherUser = participants.find((p) => p.id !== currentUserId);
+    const uid = Number(currentUserId);
+    otherUser = participants.find((p) => Number(p.id) !== uid);
     displayName = otherUser?.displayName || otherUser?.username || name || 'Chat';
     statusText = otherUser?.status === 'ONLINE' ? 'Online' : 'Offline';
   } else {
