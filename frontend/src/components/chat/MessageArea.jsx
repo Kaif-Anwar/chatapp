@@ -5,6 +5,7 @@ import { isSameDay, formatDayLabel } from '../../utils/formatDate';
 import { useChatStore } from '../../stores/chatStore';
 import { messagesApi } from '../../api/messages';
 import { useUiStore } from '../../stores/uiStore';
+import { canEditMessage } from '../../utils/messageUtils';
 
 export default function MessageArea({ conversationId, currentUserId }) {
   const userId = Number(currentUserId);
@@ -57,13 +58,17 @@ export default function MessageArea({ conversationId, currentUserId }) {
   }, [conversationId, pagination, loadMore]);
 
   const handleEdit = async (msg) => {
+    if (!canEditMessage(msg.createdAt)) {
+      addToast('Messages can only be edited within 30 seconds of sending', 'error');
+      return;
+    }
     const newContent = prompt('Edit message:', msg.content);
     if (newContent && newContent !== msg.content) {
       try {
         await messagesApi.edit(conversationId, msg.id, { content: newContent });
         updateMessage(conversationId, msg.id, { content: newContent, editedAt: new Date().toISOString() });
-      } catch {
-        addToast('Failed to edit message', 'error');
+      } catch (err) {
+        addToast(err.message || 'Failed to edit message', 'error');
       }
     }
   };

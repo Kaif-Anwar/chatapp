@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class MessageService {
+
+    private static final Duration MESSAGE_EDIT_WINDOW = Duration.ofSeconds(30);
 
     private final MessageRepository messageRepository;
     private final ConversationParticipantRepository participantRepository;
@@ -129,6 +132,11 @@ public class MessageService {
 
         if (message.isDeleted()) {
             throw new BadRequestException("Cannot edit a deleted message");
+        }
+
+        if (message.getCreatedAt() == null
+                || message.getCreatedAt().plus(MESSAGE_EDIT_WINDOW).isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Messages can only be edited within 30 seconds of sending");
         }
 
         message.setContent(request.getContent());

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import Avatar from '../common/Avatar';
 import { formatMessageTime } from '../../utils/formatDate';
 import { API_BASE_HOST } from '../../utils/constants';
+import { canEditMessage, MESSAGE_EDIT_WINDOW_MS } from '../../utils/messageUtils';
 import { Pencil, Trash2, Check, CheckCheck } from 'lucide-react';
 
 function resolveUrl(src) {
@@ -15,12 +17,47 @@ function ReadStatus({ status }) {
   return null;
 }
 
+function useEditWindowOpen(createdAt, isSent) {
+  const [editable, setEditable] = useState(() => isSent && canEditMessage(createdAt));
+
+  useEffect(() => {
+    if (!isSent || !createdAt) {
+      setEditable(false);
+      return undefined;
+    }
+
+    const refresh = () => setEditable(canEditMessage(createdAt));
+    refresh();
+
+    const sentAt = new Date(createdAt).getTime();
+    if (Number.isNaN(sentAt)) {
+      setEditable(false);
+      return undefined;
+    }
+
+    const remaining = MESSAGE_EDIT_WINDOW_MS - (Date.now() - sentAt);
+    if (remaining <= 0) {
+      setEditable(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setEditable(false), remaining);
+    return () => clearTimeout(timer);
+  }, [createdAt, isSent]);
+
+  return editable;
+}
+
 export default function MessageBubble({ message, isSent, showSender, onEdit, onDelete }) {
+  const createdAt = message?.createdAt;
+  const isDeleted = Boolean(message?.deleted);
+  const showEdit = useEditWindowOpen(createdAt, isSent && !isDeleted);
+
   if (!message || typeof message !== 'object' || message.id == null) {
     return null;
   }
 
-  const { content, senderUsername, createdAt, editedAt, deleted, attachmentUrl, attachmentName, type, status } = message;
+  const { content, senderUsername, editedAt, deleted, attachmentUrl, attachmentName, type, status } = message;
   const safeContent = typeof content === 'string' ? content : '';
 
   if (deleted) {
@@ -58,9 +95,11 @@ export default function MessageBubble({ message, isSent, showSender, onEdit, onD
         </div>
         {isSent && (
           <div className="message-actions">
-            <button className="message-action-btn" onClick={() => onEdit?.(message)} title="Edit">
-              <Pencil size={14} />
-            </button>
+            {showEdit && (
+              <button className="message-action-btn" onClick={() => onEdit?.(message)} title="Edit">
+                <Pencil size={14} />
+              </button>
+            )}
             <button className="message-action-btn danger" onClick={() => onDelete?.(message)} title="Delete">
               <Trash2 size={14} />
             </button>

@@ -9,6 +9,7 @@ import com.kaif.chatapp.chat.service.ChatService;
 import com.kaif.chatapp.chat.service.MessageService;
 import com.kaif.chatapp.chat.service.RedisMessagePublisher;
 import com.kaif.chatapp.chat.service.MessageAttachmentService;
+import com.kaif.chatapp.exception.BadRequestException;
 import com.kaif.chatapp.exception.ForbiddenException;
 import com.kaif.chatapp.notification.service.NotificationService;
 import com.kaif.chatapp.user.model.User;
@@ -93,7 +94,8 @@ class MessageServiceTest {
         Message existingMessage = Message.builder()
                 .id(100L).conversationId(5L).senderId(1L)
                 .content("Old content").type(MessageType.TEXT)
-                .status(MessageStatus.SENT).isDeleted(false).build();
+                .status(MessageStatus.SENT).isDeleted(false)
+                .createdAt(LocalDateTime.now()).build();
 
         doNothing().when(chatService).validateParticipant(5L, 1L);
         when(messageRepository.findById(100L)).thenReturn(Optional.of(existingMessage));
@@ -121,6 +123,24 @@ class MessageServiceTest {
         assertThatThrownBy(() -> messageService.editMessage(5L, 100L, otherUser, new EditMessageRequest("Hacked")))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("only edit your own");
+    }
+
+    @Test
+    @DisplayName("Edit message - rejected after 30 second window")
+    void editMessage_afterEditWindow() {
+        User sender = createUser(1L, "kaif");
+        Message existingMessage = Message.builder()
+                .id(100L).conversationId(5L).senderId(1L)
+                .content("Old content").type(MessageType.TEXT)
+                .status(MessageStatus.SENT).isDeleted(false)
+                .createdAt(LocalDateTime.now().minusSeconds(31)).build();
+
+        doNothing().when(chatService).validateParticipant(5L, 1L);
+        when(messageRepository.findById(100L)).thenReturn(Optional.of(existingMessage));
+
+        assertThatThrownBy(() -> messageService.editMessage(5L, 100L, sender, new EditMessageRequest("Too late")))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("30 seconds");
     }
 
     @Test
